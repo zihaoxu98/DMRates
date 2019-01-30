@@ -148,6 +148,42 @@ Xe136 = {
 'Fraction'	: 0.088573
 }
 
+Cs133 = {
+'Type'		: 'Cs133',
+'MassNum'	: 133,
+'AtomicNum'	: 55,
+'Mass'		: 132.905451933,
+'Spin'		: 3.5,
+'Fraction'	: 1.0
+}
+
+I127 = {
+'Type'		: 'I127',
+'MassNum'	: 127,
+'AtomicNum'	: 53,
+'Mass'		: 126.904473,
+'Spin'		: 2.5,
+'Fraction'	: 1.0
+}
+
+Na23 = {
+'Type'		: 'Na23',
+'MassNum'	: 23,
+'AtomicNum'	: 11,
+'Mass'		: 22.9897692809,
+'Spin'		: 1.5,
+'Fraction'	: 1.0
+}
+
+Ar40 = {
+'Type'		: 'Ar40',
+'MassNum'	: 40,
+'AtomicNum'	: 18,
+'Mass'		: 39.9623831225,
+'Spin'		: 0,
+'Fraction'	: 0.996035
+}
+
 ATOM_TABLE = {
 'Xe124'	: Xe124,
 'Xe126'	: Xe126,
@@ -157,6 +193,10 @@ ATOM_TABLE = {
 'Xe131'	: Xe131,
 'Xe132'	: Xe132,
 'Xe134'	: Xe134,
-'Xe136'	: Xe136
+'Xe136'	: Xe136,
+'Cs133'	: Cs133,
+'I127'	: I127,
+'Na23'	: Na23,
+'Ar40'	: Ar40
 }
 

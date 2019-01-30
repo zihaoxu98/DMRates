@@ -13,10 +13,12 @@ class TARGET(object):
 		self.SPIN = ATOM['Spin']
 		""" Isotopic Abundance """
 		self.WEIGHT = 1 if pure else ATOM['Fraction']
-		""" Atomic Number of Target """
+		""" Mass Number of Target """
 		self.A_TAR = ATOM['MassNum']
-		""" Mass Numbert of Target """
+		""" Atomic Number of Target """
 		self.Z_TAR = ATOM['AtomicNum']
+		""" Neutron Number of Target """
+		self.N_T1AR = self.A_TAR - self.Z_TAR
 		""" Mass of Target Atom """
 		self.M_TAR = ATOM['Mass'] * U
 		""" Mass of Dark Matter Atom """
@@ -145,15 +147,25 @@ class TARGET(object):
 			StructureFactor = external_StructureFactor
 
 		isospin = type_.split('_')[0]
-		type___ = type_.split('_')[1]
+		type___ = type_.split('_')[-1]
 
-		a = {'p': self.XSecToCoef(sigma0, 0)[0], 'n': self.XSecToCoef(0, sigma0)[0]}[isospin]
-		if type___ == 'mean':
+		a = {'p': self.XSecToCoef(sigma0, 0)[0], 'n': self.XSecToCoef(0, sigma0)[0], '00': self.XSecToCoef(sigma0, sigma0)[0], '11': self.XSecToCoef(sigma0, sigma0)[1]}[isospin]
+		if isospin == '01' or isospin == '11':
+			if type___ == 'mean':
+				S = a ** 2 * StructureFactor(q)[isospin]
+			elif type___ == 'upper':
+				S = a ** 2 * StructureFactor(q)[isospin + '_up']
+			elif type___ == 'lower':
+				S = a ** 2 * StructureFactor(q)[isospin + '_dn']
+		elif isospin == '00':
 			S = a ** 2 * StructureFactor(q)[isospin]
-		elif type___ == 'upper':
-			S = a ** 2 * StructureFactor(q)[isospin + '_up']
-		elif type___ == 'lower':
-			S = a ** 2 * StructureFactor(q)[isospin + '_dn']
+		elif isospin == 'p' or 'n':
+			if type___ == 'mean':
+				S = a ** 2 * StructureFactor(q)[isospin]
+			elif type___ == 'upper':
+				S = a ** 2 * StructureFactor(q)[isospin + '_up']
+			elif type___ == 'lower':
+				S = a ** 2 * StructureFactor(q)[isospin + '_dn']
 
 		return 2 * GF_GEV ** 2 / (2 * self.SPIN + 1) * self.E_X_TAR ** 2 * S * HBARC ** 2 * self.WEIGHT
 
@@ -280,5 +292,105 @@ def XePionWIMPRate(MChi_GeV, SigmaNucleon):
 					  Xe132.Pion_DifRate(Er, SigmaNucleon) + \
 					  Xe134.Pion_DifRate(Er, SigmaNucleon) + \
 					  Xe136.Pion_DifRate(Er, SigmaNucleon)
+
+
+class Neutrino(TARGET):
+	def __init__(self, ATOM):
+		TARGET.__init__(self, ATOM, 1, False)
+
+	def dSigmadEr_Ev(self, E_v, use_Helm = True):
+		rho = 1.0086
+		kappa = 0.9978
+		sintheta2 = 0.23120
+		lambdauL = -0.0031
+		lambdadL = -0.0025
+		lambdauR = 7.5E-5 / 2.0
+		lambdadR = 7.5E-5
+
+		gVp = rho * (0.5 - 2 * kappa * sintheta2) + 2 * (lambdauL + lambdauR) + lambdadL + lambdadR
+		gVn = -0.5 * rho + lambdauL + lambdauR + 2 * (lambdadL + lambdadR)
+
+		if use_Helm:
+			GV = lambda q: (gVp * self.Z_TAR + gVn * self.N_TAR) * self.SI_FormFactor(q)
+		else:
+			GV = lambda q: (gVp * self.Z_TAR + gVn * self.N_TAR) * 1
+
+		return lambda Er: GF_GEV ** 2 * self.E_TAR / 2 / np.pi * GV(self.TransMoment(Er)) ** 2 * (1 + (1 - Er / E_v) ** 2 - self.E_TAR * GEV * Er / E_v ** 2) * HBARC ** 2 / GEV
+
+	def Sigma(self, E_v, **arg):
+		ErMax = E_v ** 2 * 2 / (self.E_TAR * GEV + 2 * E_v)
+		ErMin = 0.0
+		dSigma = self.dSigmadEr_Ev(E_v, **arg)
+		return self.Integrate(dSigma, ErMin, ErMax)
+
+	def Integrate(self, func, start, end, num_mesh = 100):
+		mesh = np.linspace(start, end, num_mesh)
+		delta = (end - start) / (num_mesh - 1)
+		coef = lambda ind: 1 if ind == 0 or ind == num_mesh - 1 else {0 : 2, 1 : 4}[ind % 2]
+		return np.sum([func(mesh[i]) * coef(i) for i in range(num_mesh)]) * delta / 3
+
+
+class SNS(Neutrino):
+	def __init__(self, ATOM):
+		Neutrino.__init__(self, ATOM)
+
+		data = np.loadtxt('SNS.dat', delimiter = ',')
+		from scipy.interpolate import interp1d
+		spectra = interp1d(data[:, 0] * MEV, data[:, 1], kind = 'nearest', bounds_error = False, fill_value = 'extrapolate')
+		norm = self.Integrate(spectra, 0.01 * MEV, 100 * MEV)
+		self.Spectra = lambda Ev: spectra(Ev) / norm
+
+		self.minEv = lambda Er: 0.5 * Er + np.sqrt(0.5 * self.E_TAR * GEV * Er + 0.25 * Er ** 2)
+
+		self.flux = 4.3E7 / CM2 / 3.0
+
+
+	def dSigmadEr(self, E_R, **arg):
+		func = lambda Ev, Er: self.dSigmadEr_Ev(Ev, **arg)(Er) * self.Spectra(Ev)
+
+		return self.Integrate(lambda Ev: func(Ev, E_R), self.minEv(E_R), 60 * MEV)
+
+	def DifferentialEventRate(self, E_R, **arg):
+		return self.flux / self.M_TAR * self.dSigmadEr(E_R, **arg)
+
+
+
+if __name__ == '__main__':
+	import matplotlib.pyplot as plt
+
+	# x = np.linspace(0, 100, 100)
+	# ax = plt.subplot(111)
+	# ax.semilogy(x, [SNS(ATOM_TABLE['Na23']).DifferentialEventRate(xx * KEV, use_Helm = True) * KEV * YEAR * 306 for xx in x], color = 'red', label = r'${}^{23}$Na, 306 kg')
+	# ax.semilogy(x, [SNS(ATOM_TABLE['Ar40']).DifferentialEventRate(xx * KEV, use_Helm = True) * KEV * YEAR * 22 for xx in x], color = 'green', label = r'${}^{40}$Ar, 22 kg')
+	# ax.semilogy(x, [(SNS(ATOM_TABLE['Cs133']).DifferentialEventRate(xx * KEV, use_Helm = True) * 133/(133+127) + \
+	# 				 SNS(ATOM_TABLE['I127']).DifferentialEventRate(xx * KEV, use_Helm = True) * 127/(133+127)) * KEV * YEAR * 14.57 for xx in x], color = 'red', label = r'${}^{23}$Na, 14.57 kg')
+	# ax.legend()
+	# ax.set_xlabel('Nuclear recoil energy (keV)')
+	# ax.set_ylabel('Event rate (events/year/kg)')
+	# ax.set_xlim([0, 100])
+	# ax.set_ylim([1E-1, 1E3])
+	# ax.tick_params(which = 'major', right = True, top = True, direction = 'in')
+	# ax.tick_params(which = 'minor', right = True, top = True, direction = 'in')
+	# plt.show()
+
+	Z = 54
+	N = 77
+	Er = 10
+	helm = False
+
+
+	A = Z + N
+	M = 0.931 * (Z + N)
+	atom = {
+	'Type' : 'ATOM',
+	'MassNum' : A,
+	'AtomicNum'	: Z,
+	'Mass'		: A,
+	'Spin'		: 0,
+	'Fraction'	: 1.0
+	}
+	rate = SNS(atom).DifferentialEventRate(Er * KEV, use_Helm = helm) * KEV * YEAR * KG
+	print('Z = %i\nN = %i\nEr = %.2f keV\nHelm = %s\nRate = %.3f' % (Z, N, Er, helm, rate))
+
 
 

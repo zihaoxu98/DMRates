@@ -84,7 +84,7 @@ class TARGET(object):
 		rn = np.sqrt(c ** 2 + 7 / 3 * np.pi ** 2 * a ** 2 - 5 * s ** 2)
 		Q = q / HBAR
 		qrn = Q * rn
-		F_TAR2 = (3 * spherical_jn(1, qrn) / qrn) ** 2 * np.exp(- (Q * s) ** 2 / 2)
+		F_TAR2 = (3 * spherical_jn(1, qrn) / qrn) ** 2 * np.exp(- (Q * s) ** 2)
 		return F_TAR2
 
 	""" SD Structure Function For XENON From arxiv:1304.7684 """

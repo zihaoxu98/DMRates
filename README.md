@@ -1,6 +1,6 @@
 ### Installation
 ```
-git clone https://github.com/WilliamXu980906/DMRates.git
+git clone https://github.com/xzh19980906/DMRates.git
 cd DMRates
 pip install -e .
 ```

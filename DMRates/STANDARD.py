@@ -5,7 +5,7 @@ from scipy.special import spherical_jn
 from DMRates.CONST import *
 
 class TARGET(object):
-	def __init__(self, ATOM, M_X, pure = False):
+	def __init__(self, ATOM, M_X, pure = False, V_ESCAPE=V_ESCAPE, V_EARTH=V_EARTH, V_MEAN=V_MEAN):
 		super(TARGET, self).__init__()
 		""" Target Type """
 		self.TAR = ATOM
@@ -200,21 +200,21 @@ class TARGET(object):
 		return self.SI_CrossSection(E_R, XSEC0, external_FormFactor) * self.N_X * self.MRVel(E_R) / 2 / self.M_X_TAR ** 2
 
 
-def XeSpinDependentRate(MChi_GeV, SigmaNucleon, Type):
-	Xe129 = TARGET(ATOM_TABLE['Xe129'], MChi_GeV * M_GEV, False)
-	Xe131 = TARGET(ATOM_TABLE['Xe131'], MChi_GeV * M_GEV, False)
+def XeSpinDependentRate(MChi_GeV, SigmaNucleon, Type, **kwargs):
+	Xe129 = TARGET(ATOM_TABLE['Xe129'], MChi_GeV * M_GEV, False, **kwargs)
+	Xe131 = TARGET(ATOM_TABLE['Xe131'], MChi_GeV * M_GEV, False, **kwargs)
 	return lambda Er: Xe129.SD_DifRate(Er, Type, SigmaNucleon) + Xe131.SD_DifRate(Er, Type, SigmaNucleon)
 
-def XeSpinIndependentRate(MChi_GeV, SigmaNucleon):
-	Xe124 = TARGET(ATOM_TABLE['Xe124'], MChi_GeV * M_GEV, False)
-	Xe126 = TARGET(ATOM_TABLE['Xe126'], MChi_GeV * M_GEV, False)
-	Xe128 = TARGET(ATOM_TABLE['Xe128'], MChi_GeV * M_GEV, False)
-	Xe129 = TARGET(ATOM_TABLE['Xe129'], MChi_GeV * M_GEV, False)
-	Xe130 = TARGET(ATOM_TABLE['Xe130'], MChi_GeV * M_GEV, False)
-	Xe131 = TARGET(ATOM_TABLE['Xe131'], MChi_GeV * M_GEV, False)
-	Xe132 = TARGET(ATOM_TABLE['Xe132'], MChi_GeV * M_GEV, False)
-	Xe134 = TARGET(ATOM_TABLE['Xe134'], MChi_GeV * M_GEV, False)
-	Xe136 = TARGET(ATOM_TABLE['Xe136'], MChi_GeV * M_GEV, False)
+def XeSpinIndependentRate(MChi_GeV, SigmaNucleon, **kwargs):
+	Xe124 = TARGET(ATOM_TABLE['Xe124'], MChi_GeV * M_GEV, False, **kwargs)
+	Xe126 = TARGET(ATOM_TABLE['Xe126'], MChi_GeV * M_GEV, False, **kwargs)
+	Xe128 = TARGET(ATOM_TABLE['Xe128'], MChi_GeV * M_GEV, False, **kwargs)
+	Xe129 = TARGET(ATOM_TABLE['Xe129'], MChi_GeV * M_GEV, False, **kwargs)
+	Xe130 = TARGET(ATOM_TABLE['Xe130'], MChi_GeV * M_GEV, False, **kwargs)
+	Xe131 = TARGET(ATOM_TABLE['Xe131'], MChi_GeV * M_GEV, False, **kwargs)
+	Xe132 = TARGET(ATOM_TABLE['Xe132'], MChi_GeV * M_GEV, False, **kwargs)
+	Xe134 = TARGET(ATOM_TABLE['Xe134'], MChi_GeV * M_GEV, False, **kwargs)
+	Xe136 = TARGET(ATOM_TABLE['Xe136'], MChi_GeV * M_GEV, False, **kwargs)
 	return lambda Er: Xe124.SI_DifRate(Er, SigmaNucleon) + \
 					  Xe126.SI_DifRate(Er, SigmaNucleon) + \
 					  Xe128.SI_DifRate(Er, SigmaNucleon) + \

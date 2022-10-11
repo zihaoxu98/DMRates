@@ -2,9 +2,9 @@ import numpy as np
 from math import erf
 
 """ Mean Velocity """
-V_MEAN = 220E3
+V_MEAN = 238E3
 """ Earth Velocity """
-V_EARTH = 232E3
+V_EARTH = 250E3
 """ Escape Velocity """
 V_ESCAPE = 544E3
 """ Dimensionless Velocity """
